@@ -1,0 +1,3 @@
+include LICENSE NOTICE README.md
+prune exports
+global-exclude *.py[cod] __pycache__

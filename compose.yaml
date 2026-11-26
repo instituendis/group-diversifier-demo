@@ -1,0 +1,29 @@
+# WARNING: Group Diversifier has NO authentication or user accounts. The port
+# is published on 127.0.0.1 only, so it is reachable from this machine and
+# nobody else. Do not publish on 0.0.0.0 (for example "0.0.0.0:8501:8501") or on
+# any other address: a reverse proxy that handles login and TLS must be the only
+# way in. The hosted templates are in deploy/.
+name: group-diversifier
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: group-diversifier:0.0.4
+    container_name: group-diversifier
+    ports:
+      - "127.0.0.1:8501:8501"
+    restart: "no"
+    environment:
+      GROUP_DIVERSIFIER_DEMO: "${GROUP_DIVERSIFIER_DEMO:-}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3

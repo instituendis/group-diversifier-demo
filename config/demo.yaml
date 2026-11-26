@@ -1,0 +1,42 @@
+name: "Demo Profile"
+description: "The six fictional attributes of the demo roster (data/demo/demo_cohort.csv)"
+version: "1.0"
+
+dimensions:
+  - name: "favourite_colour"
+    type: "categorical"
+    enabled: true
+    categories: ["Blue", "Green", "Purple", "Red", "Yellow"]
+    weight: 50.0
+
+  - name: "ice_cream"
+    type: "categorical"
+    enabled: true
+    categories: ["Chocolate", "Mango", "Pistachio", "Strawberry", "Vanilla"]
+    weight: 50.0
+
+  - name: "city"
+    type: "categorical"
+    enabled: true
+    categories: ["Kyoto", "Lima", "Lisbon", "Nairobi", "Oslo", "Toronto"]
+    weight: 50.0
+
+  - name: "hobbies"
+    type: "multi_select"
+    enabled: true
+    values: ["Baking", "Chess", "Gaming", "Hiking", "Karaoke", "Painting", "Surfing"]
+    max_selections: 3
+    weight: 40.0
+
+  - name: "pet"
+    type: "categorical"
+    enabled: true
+    categories: ["Cat", "Dog", "Fish", "None", "Parrot"]
+    weight: 40.0
+
+  - name: "coffees_per_day"
+    type: "numeric"
+    enabled: true
+    min_value: 0
+    max_value: 5
+    weight: 30.0

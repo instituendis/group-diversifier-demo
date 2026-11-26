@@ -1,0 +1,114 @@
+{
+  "name": "Demo — Fun mix",
+  "description": "Playful rules for the fictional demo roster (data/demo/demo_cohort.csv, 100 people, teams of 4):\n- favourite_colour, ice_cream, city, hobbies, pet: spread across teams (weight 2; hobbies and pet 1.5)\n- coffees_per_day: equal average per team (weight 1)\n- Chocolate fans: at most 1 per team (soft)\n- Never repeat a teammate (hard)",
+  "version": 1,
+  "attributes": [
+    {
+      "attribute": "hobbies",
+      "goal": "diversify",
+      "weight": 1.5,
+      "enabled": true,
+      "kind": null,
+      "order": null,
+      "missing_as_category": false
+    },
+    {
+      "attribute": "favourite_colour",
+      "goal": "diversify",
+      "weight": 2.0,
+      "enabled": true,
+      "kind": null,
+      "order": null,
+      "missing_as_category": false
+    },
+    {
+      "attribute": "ice_cream",
+      "goal": "diversify",
+      "weight": 2.0,
+      "enabled": true,
+      "kind": null,
+      "order": null,
+      "missing_as_category": false
+    },
+    {
+      "attribute": "city",
+      "goal": "diversify",
+      "weight": 2.0,
+      "enabled": true,
+      "kind": null,
+      "order": null,
+      "missing_as_category": false
+    },
+    {
+      "attribute": "pet",
+      "goal": "diversify",
+      "weight": 1.5,
+      "enabled": true,
+      "kind": null,
+      "order": null,
+      "missing_as_category": false
+    },
+    {
+      "attribute": "coffees_per_day",
+      "goal": "balance",
+      "weight": 1.0,
+      "enabled": true,
+      "kind": null,
+      "order": null,
+      "missing_as_category": false
+    }
+  ],
+  "counts": [
+    {
+      "attribute": "ice_cream",
+      "values": [
+        "Chocolate"
+      ],
+      "mode": "any_of",
+      "min_count": null,
+      "max_count": 1,
+      "numeric_range": null,
+      "hard": false,
+      "weight": 4.0,
+      "enabled": true,
+      "label": "At most 1 Chocolate fan per team"
+    }
+  ],
+  "isolation": [],
+  "numeric_bounds": [],
+  "shared": [],
+  "pairs": [],
+  "history": {
+    "enabled": true,
+    "repeat_weight": 3.0,
+    "max_times_together": 1,
+    "hard_cap": true,
+    "cap_weight": 20.0,
+    "decay": 1.0,
+    "contact_model": "team_size",
+    "reference_team_size": 4,
+    "ignore_groups_larger_than": 12
+  },
+  "preferences": {
+    "use_student_preferences": true,
+    "prefer_weight": 1.0,
+    "avoid_hard": true,
+    "avoid_weight": 10.0
+  },
+  "fairness": {
+    "worst_team_weight": 0.25
+  },
+  "solver": {
+    "method": "anneal",
+    "time_limit_s": 10.0,
+    "restarts": 4,
+    "seed": 42,
+    "iterations": null,
+    "flexible_sizes": false,
+    "polish": true,
+    "joint_projects": false,
+    "mip_gap": 0.01,
+    "workers": 1,
+    "scale_time_limit": true
+  }
+}

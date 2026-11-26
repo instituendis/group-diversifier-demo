@@ -1,0 +1,58 @@
+# SECURITY: This file does NOT provide login or TLS. The port is published on 127.0.0.1
+# only; a reverse proxy (the nginx example in deploy/nginx/) must sit
+# in front, with authentication and TLS. For one person on one computer use the
+# compose.yaml of the repository instead.
+# WARNING: Retention: the app keeps uploaded data only in memory, but Streamlit does not
+# end the server-side session of a closed tab, so uploaded bytes stay in memory
+# until the process restarts. Restart the container on a schedule (for example
+# nightly: `podman restart group-diversifier` from cron or a systemd timer) or
+# stop it when nobody uses it.
+name: group-diversifier-hosted
+
+services:
+  app:
+    image: group-diversifier:0.0.4
+    container_name: group-diversifier
+    ports:
+      - "127.0.0.1:8501:8501"          # loopback only: the proxy is the way in
+    restart: unless-stopped
+    environment:
+      GROUP_DIVERSIFIER_HOSTED: "1"
+      # WARNING: The source offer (AGPL-3.0 section 13), shown as the footer's "Source
+      # code" link. Empty uses the default link. Set it to a URL your users can open,
+      # and to your modified source if you changed the program.
+      GROUP_DIVERSIFIER_SOURCE_URL: ""
+      GROUP_DIVERSIFIER_PRIVACY_URL: ""
+      GROUP_DIVERSIFIER_PRIVACY_NOTICE: ""
+      STREAMLIT_SERVER_MAX_UPLOAD_SIZE: "25"           # MB; also bounds "Restore session" files
+      STREAMLIT_SERVER_FILE_WATCHER_TYPE: "none"       # no source watcher in production
+      # WARNING: The host name users type (no scheme, no port). Needed behind a proxy:
+      # it makes Streamlit's origin check accept that name, and it stops the
+      # startup lookup of the server's public IP at a third-party service.
+      STREAMLIT_BROWSER_SERVER_ADDRESS: "groups.example.org"
+    read_only: true                    # root filesystem is read-only
+    tmpfs:
+      # WARNING: Streamlit buffers uploads above 1 MB in a temporary file. Without a
+      # writable /tmp those uploads fail with HTTP 500 (tested). The tmpfs is
+      # RAM and counts toward mem_limit; size it above the upload cap.
+      - /tmp:rw,noexec,nosuid,nodev,size=128m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1536m
+    memswap_limit: 1536m               # same as mem_limit: no swap
+    cpus: 1.5                          # leave headroom on a small host
+    pids_limit: 512
+    stop_grace_period: 10s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

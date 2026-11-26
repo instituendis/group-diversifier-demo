@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "group-diversifier"
+dynamic = ["version"]
+description = "Allocate students into diverse, balanced project teams across a series of projects, avoiding repeat pairings (Streamlit app and command line)."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE", "NOTICE"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Streamlit",
+    "Intended Audience :: Education",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Education",
+]
+dependencies = [
+    "streamlit>=1.64,<2",
+    "pandas>=2.2,<4",
+    "numpy>=2.0,<3",
+    "plotly>=5.24,<8",
+    "networkx>=3.2,<4",
+    "scipy>=1.13,<2",
+    "openpyxl>=3.1,<4",
+    "pyyaml>=6.0.2,<7",
+]
+
+[project.urls]
+Homepage = "https://github.com/instituendis/group-diversifier-demo"
+Source = "https://github.com/instituendis/group-diversifier-demo"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff",
+]
+
+[project.scripts]
+group-diversifier = "app.launch:cli"
+group-diversifier-app = "app.launch:main"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.dynamic]
+version = { attr = "app.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["app", "app.*"]
+namespaces = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-q", "-ra", "--import-mode=importlib"]
+norecursedirs = [".*", "__pycache__", "venv", ".venv", "build", "dist", "exports"]
+markers = [
+    "slow: long-running test; skipped unless --run-slow is given or RUN_SLOW=1",
+    "apptest: drives Streamlit pages through streamlit.testing.v1.AppTest",
+    "integration: exercises several subsystems together on a full roster",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:streamlit.*",
+    "ignore::DeprecationWarning:altair.*",
+    "ignore::DeprecationWarning:plotly.*",
+    "ignore::PendingDeprecationWarning:streamlit.*",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+extend-exclude = [".venv", "exports"]
+
+[tool.ruff.lint]
+select = ["F", "E9", "B006", "B008"]

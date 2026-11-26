@@ -1,0 +1,57 @@
+# SECURITY: No login and no TLS here: put nginx in front
+# (the nginx example in deploy/nginx/). The port is bound to loopback.
+# WARNING: Retention: uploaded data lives only in the process's memory, but Streamlit
+# does not end the session of a closed tab, so it stays there until the process
+# restarts. Restart the service on a schedule (for example nightly, with a
+# systemd timer) or stop it when nobody uses it: Podman has no idle shutdown.
+
+[Unit]
+Description=Group Diversifier (hosted mode)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/group-diversifier:0.0.4
+ContainerName=group-diversifier
+PublishPort=127.0.0.1:8501:8501
+
+Environment=GROUP_DIVERSIFIER_HOSTED=1
+# WARNING: The source offer (AGPL-3.0 section 13), shown as the footer's "Source code"
+# link. Empty uses the default link. Set it to a URL your users can open, and to
+# your modified source if you changed the program.
+Environment=GROUP_DIVERSIFIER_SOURCE_URL=
+Environment=GROUP_DIVERSIFIER_PRIVACY_URL=
+Environment=GROUP_DIVERSIFIER_PRIVACY_NOTICE=
+Environment=STREAMLIT_SERVER_MAX_UPLOAD_SIZE=25
+Environment=STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
+# WARNING: The host name users type (no scheme, no port): Streamlit's origin check
+# accepts only that name behind a proxy; see compose.hosted.yaml.
+Environment=STREAMLIT_BROWSER_SERVER_ADDRESS=groups.example.org
+
+ReadOnly=true
+# WARNING: Streamlit buffers uploads above 1 MB in /tmp: without a writable /tmp they fail.
+# The tmpfs is RAM and counts toward Memory=; keep it above the upload cap.
+Tmpfs=/tmp:rw,noexec,nosuid,nodev,size=128m
+DropCapability=ALL
+NoNewPrivileges=true
+
+Memory=1536m
+PidsLimit=512
+PodmanArgs=--cpus=1.5 --memory-swap=1536m
+
+HealthCmd=python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=4)"
+HealthInterval=30s
+HealthTimeout=5s
+HealthStartPeriod=20s
+HealthRetries=3
+HealthOnFailure=restart
+
+LogDriver=journald
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+
+[Install]
+WantedBy=default.target

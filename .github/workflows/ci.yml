@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  workflow_dispatch:
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, byte-compile, smoke tests, data reproduction and setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.4"
+          enable-cache: false
+
+      - name: Create the environment
+        run: |
+          uv venv --python 3.13
+          uv pip sync --require-hashes requirements-dev.lock.txt
+
+      - name: Lint
+        run: .venv/bin/python -m ruff check .
+
+      - name: Byte-compile app/
+        run: .venv/bin/python -m compileall -q app
+
+      - name: Smoke tests
+        run: .venv/bin/python -m pytest
+
+      - name: The demo data is reproduced byte for byte
+        run: |
+          .venv/bin/python scripts/make_demo_cohort.py "$RUNNER_TEMP/demo_cohort.csv"
+          cmp "$RUNNER_TEMP/demo_cohort.csv" data/demo/demo_cohort.csv
+
+      - name: run.sh, setup only
+        env:
+          GD_SETUP_ONLY: "1"
+        run: ./run.sh
+
+  image:
+    name: Container image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build image
+        run: docker build -f Containerfile -t group-diversifier:ci .
+
+      - name: Start container and wait for health
+        run: |
+          docker run -d --name gd -p 127.0.0.1:8501:8501 group-diversifier:ci
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8501/_stcore/health; then
+              echo
+              echo "healthy after about $((i * 2)) s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::no healthy response from /_stcore/health within 120 s"
+          docker ps -a
+          docker logs gd
+          exit 1
+
+      - name: Container log
+        if: always()
+        run: docker logs gd || true

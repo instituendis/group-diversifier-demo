@@ -1,0 +1,19 @@
+Group Diversifier
+Copyright (C) 2025-2026 the Group Diversifier contributors
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. See the file LICENSE for the full text (SPDX identifier:
+AGPL-3.0-or-later).
+
+Because the AGPL covers network use, anyone who runs a modified version of
+this program as a service for other users must offer those users the source
+code of their modified version.
+
+Third-party Python packages (Streamlit, pandas, NumPy, SciPy, Plotly,
+networkx, openpyxl, PyYAML) are installed separately and keep their own
+licences. THIRD_PARTY_LICENSES.md lists every Python package the container
+image installs on top of its python:3.13-slim base, with the licence each one
+declares; the base image's own software (CPython, pip, the Debian packages)
+keeps the licences it ships with.

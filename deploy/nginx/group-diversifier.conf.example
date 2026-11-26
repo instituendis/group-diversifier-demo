@@ -1,0 +1,99 @@
+# WARNING: authentication, TLS, rate limiting and log retention are the operator's
+# job: the app has none of them. Do not publish the app without the login and TLS
+# that this file configures.
+
+limit_req_zone  $binary_remote_addr  zone=gd_req:10m   rate=30r/s;
+limit_conn_zone $binary_remote_addr  zone=gd_conn:10m;
+
+map $uri $gd_cache_control {
+    default             "private, no-cache";
+    ~^/static/          "private, max-age=31536000, immutable";
+    ~^/favicon          "private, max-age=86400";
+}
+
+map $http_upgrade $gd_connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# WARNING: Only behind a CDN or another proxy: uncomment the two lines below.
+# Without them every visitor shares the proxy's address in the rate limits and
+# in the logs. Fill the file with the address ranges your provider publishes,
+# one "set_real_ip_from <range>;" per line, and keep it updated; set
+# real_ip_header to the client-address header your provider documents.
+# include /etc/nginx/proxy-ips.conf;
+# real_ip_header X-Forwarded-For;
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name groups.example.org;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name groups.example.org;
+
+    ssl_certificate     /etc/ssl/groups.example.org/fullchain.pem;
+    ssl_certificate_key /etc/ssl/groups.example.org/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_session_timeout 1d;
+    ssl_session_cache   shared:gd_ssl:10m;
+    ssl_session_tickets off;
+
+    server_tokens off;
+
+    auth_basic           "Group Diversifier";
+    auth_basic_user_file /etc/nginx/group-diversifier.htpasswd;
+
+    client_max_body_size 26m;
+
+    limit_req         zone=gd_req burst=200 nodelay;
+    limit_req_status  429;
+    limit_conn        gd_conn 150;
+    limit_conn_status 429;
+
+    access_log /var/log/nginx/group-diversifier.access.log;
+    error_log  /var/log/nginx/group-diversifier.error.log warn;
+
+    location = /_stcore/metrics {
+        return 404;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8501;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection $gd_connection_upgrade;
+
+        # INVARIANT: keep the Host the browser used (with its port, if any): Streamlit
+        # compares it with the WebSocket's Origin header (same-origin check).
+        proxy_set_header Host              $http_host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # SECURITY: the app has no use for the login; do not hand it on.
+        proxy_set_header Authorization     "";
+
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+
+        proxy_buffering off;
+
+        proxy_cookie_flags _streamlit_xsrf secure;
+
+        # SECURITY: authenticated responses must not be stored by a shared cache (a CDN
+        # or this server): replace the app's header with a private one.
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control $gd_cache_control always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer" always;
+        # WARNING: HSTS belongs here, not in the server block: a location with its
+        # own add_header drops the server's. Uncomment it once HTTPS works for good.
+        # add_header Strict-Transport-Security "max-age=31536000" always;
+    }
+}
